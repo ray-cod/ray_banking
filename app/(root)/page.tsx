@@ -1,38 +1,57 @@
 import HeaderBox from '@/components/HeaderBox'
+// import RecentTransactions from '@/components/RecentTransactions';
+import RightSidebar from '@/components/RightSidebar';
 import TotalBalanceBox from '@/components/TotalBalanceBox';
-import RightSidebar from '@/components/RightSidebar'
+import { getAccount, getAccounts } from '@/lib/actions/bank.actions';
+import { getLoggedInUser } from '@/lib/actions/user.actions';
 
-const Home = () => {
-    const loggedIn = { firstName: 'Raimi', lastName: 'Dikamona', email: 'raimilassissi8@gmail.com' }
+const Home = async ({ searchParams: { id, page } }: SearchParamProps) => {
+  const currentPage = Number(page as string) || 1;
+  const loggedIn = await getLoggedInUser();
+  const accounts = await getAccounts({ 
+    userId: loggedIn.$id 
+  })
 
-    return (
-        <section className="home">
-          <div className="home-content">
-            <header className="home-header">
-              <HeaderBox 
-                type="greeting"
-                title="Welcome"
-                user={loggedIn?.firstName || 'Guest'}
-                subtext="Access and manage your account and transactions efficiently."
-              />
+  if(!accounts) return;
+  
+  const accountsData = accounts?.data;
+  const appwriteItemId = (id as string) || accountsData[0]?.appwriteItemId;
 
-              <TotalBalanceBox 
-                accounts={[]}
-                totalBanks={1}
-                totalCurrentBalance={12500.35}
-              />
+  const account = await getAccount({ appwriteItemId })
 
-              RECENT TRANSACTION
-            </header>
-          </div>
-
-          <RightSidebar 
-            user={loggedIn}
-            transactions={[]}
-            banks={[{ currentBalance: 1250.50 }, { currentBalance: 250.50 }]}
+  return (
+    <section className="home">
+      <div className="home-content">
+        <header className="home-header">
+          <HeaderBox 
+            type="greeting"
+            title="Welcome"
+            user={loggedIn?.firstName || 'Guest'}
+            subtext="Access and manage your account and transactions efficiently."
           />
-        </section>
-    )
+
+          <TotalBalanceBox 
+            accounts={accountsData}
+            totalBanks={accounts?.totalBanks}
+            totalCurrentBalance={accounts?.totalCurrentBalance}
+          />
+        </header>
+
+        {/* <RecentTransactions 
+          accounts={accountsData}
+          transactions={account?.transactions}
+          appwriteItemId={appwriteItemId}
+          page={currentPage}
+        /> */}
+      </div>
+
+      <RightSidebar 
+        user={loggedIn}
+        transactions={account?.transactions}
+        banks={accountsData?.slice(0, 2)}
+      />
+    </section>
+  )
 }
 
 export default Home
